@@ -53,16 +53,31 @@ function doGet(e) {
     var values = range.getValues();
     var displayValues = range.getDisplayValues(); // Ottiene i valori visualizzati (utile per preservare il formato delle date stringa)
     var data = [];
+    var sheetModified = false;
     
     // L'intestazione è alla riga 0. I dati veri e propri partono dalla riga 1.
     for (var i = 1; i < values.length; i++) {
       var rowVal = values[i];
       var rowDisp = displayValues[i];
-      if (!rowVal[0]) continue; // Salta righe vuote senza ID
+      
+      var venditoreRaw = rowVal[1] ? rowVal[1].toString().trim().toUpperCase() : "";
+      // Se non c'è il venditore in colonna B, saltiamo la riga
+      if (!venditoreRaw || venditoreRaw === "VENDITORE" || venditoreRaw === "NOME VENDITORE") {
+        continue;
+      }
+      
+      var id = rowVal[0];
+      // Se l'ID in colonna A è vuoto, generiamo un ID univoco e lo scriviamo sul foglio
+      if (!id || isNaN(Number(id))) {
+        id = new Date().getTime() + i;
+        sheet.getRange(i + 1, 1).setValue(id);
+        rowVal[0] = id;
+        sheetModified = true;
+      }
       
       data.push({
-        id: rowVal[0],
-        venditore: rowVal[1] ? rowVal[1].toString().trim().toUpperCase() : "",
+        id: Number(id),
+        venditore: venditoreRaw,
         lead: Number(rowVal[2]) || 0,
         appuntamenti: Number(rowVal[3]) || 0,
         giacenze: Number(rowVal[4]) || 0,
@@ -85,6 +100,10 @@ function doGet(e) {
       });
     }
     
+    if (sheetModified) {
+      SpreadsheetApp.flush();
+    }
+    
     return ContentService.createTextOutput(JSON.stringify(data))
                          .setMimeType(ContentService.MimeType.JSON);
   }
@@ -97,9 +116,24 @@ function doGet(e) {
     if (agentiSheet) {
       var aValues = agentiSheet.getDataRange().getValues();
       for (var j = 1; j < aValues.length; j++) {
-        var nome = aValues[j][0];
+        var colA = aValues[j][0] ? aValues[j][0].toString().trim() : "";
+        var colB = aValues[j][1] ? aValues[j][1].toString().trim() : "";
+        
+        // Se il nome del venditore nello sheet è sempre in colonna B, proviamo prima colB!
+        var nome = "";
+        if (colB && !/^\d+$/.test(colB) && /[A-Za-z]/.test(colB)) {
+          nome = colB;
+        } else if (colA && !/^\d+$/.test(colA) && /[A-Za-z]/.test(colA)) {
+          nome = colA;
+        }
+        
         if (nome) {
-          agenti.push(nome.toString().trim().toUpperCase());
+          var norm = nome.toUpperCase();
+          if (norm && norm !== "UNDEFINED" && norm !== "[OBJECT OBJECT]" && norm !== "VENDITORE" && norm !== "ID" && norm !== "NOME VENDITORE" && norm !== "NOME") {
+            if (agenti.indexOf(norm) === -1) {
+              agenti.push(norm);
+            }
+          }
         }
       }
     }
@@ -110,8 +144,10 @@ function doGet(e) {
       var vNome = f1Values[k][1]; // Colonna B (2) è il Venditore
       if (vNome) {
         vNome = vNome.toString().trim().toUpperCase();
-        if (vNome && agenti.indexOf(vNome) === -1) {
-          agenti.push(vNome);
+        if (vNome && !/^\d+$/.test(vNome) && vNome !== "UNDEFINED" && vNome !== "[OBJECT OBJECT]" && vNome !== "VENDITORE" && vNome !== "ID" && vNome !== "NOME VENDITORE") {
+          if (agenti.indexOf(vNome) === -1) {
+            agenti.push(vNome);
+          }
         }
       }
     }

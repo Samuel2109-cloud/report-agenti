@@ -97,7 +97,11 @@ function valoreTesto(valore) {
 }
 
 function nomeNormalizzato(valore) {
-  return valoreTesto(valore).trim().toUpperCase();
+  const norm = valoreTesto(valore).trim().toUpperCase();
+  if (!norm || /^\d+$/.test(norm) || norm === "UNDEFINED" || norm === "[OBJECT OBJECT]" || norm === "ID" || norm === "VENDITORE") {
+    return "";
+  }
+  return norm;
 }
 
 function numeroPulito(valore) {
