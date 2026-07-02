@@ -4,7 +4,7 @@
 
 // ─── CONFIGURAZIONE UTENTE ───────────────────────────────────────────────
 // Inserisci qui il link (URL Web App) fornito da Google Apps Script dopo il deployment
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKt2d6mzLZyObkVkOaG3VN5cpCnZynIBj8KWEb4pVwlgF1ZTXNwxW-9nJuq3JYxxjr/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXra7cSob4cpuzmtSjlhbUs10onnPQqa4QXU-YM-zYWa6ygweqXPjgMvt-d4wkNY2lVg/exec";
 
 // ─── STATO DELL'APPLICAZIONE (DATABASE IN MEMORIA) ───────────────────────
 let database = [];
@@ -232,7 +232,7 @@ function renderActiveTab() {
 // ─── CARICAMENTO DATI DAL CLOUD ───────────────────────────────────────────────
 function caricaDatiDalCloud() {
   mostraLoading(true);
-  fetch(GOOGLE_SCRIPT_URL + "?action=getDati")
+  fetch(`${GOOGLE_SCRIPT_URL}?action=getDati&t=${Date.now()}`, { cache: "no-store" })
     .then((res) => res.json())
     .then((data) => {
       if (Array.isArray(data)) {
@@ -1126,7 +1126,7 @@ function renderFoglio5() {
     if (breakClass) tr.className = "venditore-break";
 
     tr.innerHTML = `
-      <td>${formattaDataPerTabellaVisiva(r.dataInserimento)}</td>
+      <td>${r.id}</td>
       <td>${r.venditore}</td>
       <td>${r.lead}</td>
       <td>${r.appuntamenti}</td>

@@ -1,0 +1,8 @@
+{
+  "name": "CRM Real Time Venditori",
+  "description": "CRM Real Time per gestione, inserimento dati e comparativo venditori.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

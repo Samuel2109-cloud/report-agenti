@@ -31,7 +31,7 @@
 
         <div class="grid-inputs" style="margin-top: 0;">
           <div class="form-group">
-            <label for="ins-data-inserimento">Data Inserimento:</label>
+            <label for="ins-data-inserimento">Data Inserimento Dati:</label>
             <input type="date" id="ins-data-inserimento" />
           </div>
           <div class="form-group">
@@ -138,11 +138,11 @@
             </select>
           </div>
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Inizio (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Inizio (Data Riferimento Dati)</span>
             <input type="date" id="f2-inizio" />
           </div>
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Fine (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Fine (Data Riferimento Dati)</span>
             <input type="date" id="f2-fine" />
           </div>
         </div>
@@ -157,11 +157,11 @@
           <div class="kpi-card"><span>Tot Contratti</span><div id="kpi-f2-contratti">0</div></div>
         </div>
 
-        <div class="table-container">
+        <div class="table-container table-sticky-two">
           <table id="table-foglio2">
             <thead>
               <tr>
-                <th>Data Inserimento</th>
+                <th>Data Riferimento Dati</th>
                 <th>Venditore</th>
                 <th>Lead</th>
                 <th>App.ti</th>
@@ -205,11 +205,11 @@
             </select>
           </div>
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Inizio (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Inizio (Data Riferimento Dati)</span>
             <input type="date" id="f3-inizio" />
           </div>
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Fine (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Fine (Data Riferimento Dati)</span>
             <input type="date" id="f3-fine" />
           </div>
         </div>
@@ -231,11 +231,11 @@
         <h2>Tabella di Analisi Multi-Parametro Estesa</h2>
         <div class="filters">
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Inizio (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Inizio (Data Riferimento Dati)</span>
             <input type="date" id="f4-inizio" />
           </div>
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Fine (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Fine (Data Riferimento Dati)</span>
             <input type="date" id="f4-fine" />
           </div>
         </div>
@@ -257,7 +257,7 @@
         <h2>Vista Giorno</h2>
         <div class="filters">
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Seleziona Data (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Seleziona Data (Data Riferimento Dati)</span>
             <input type="date" id="f6-data" />
           </div>
         </div>
@@ -321,11 +321,11 @@
             </select>
           </div>
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Inizio (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Inizio (Data Riferimento Dati)</span>
             <input type="date" id="f7-inizio" />
           </div>
           <div style="display: flex; flexDirection: column; gap: 4px;">
-            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Fine (Data Inserimento)</span>
+            <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Fine (Data Riferimento Dati)</span>
             <input type="date" id="f7-fine" />
           </div>
         </div>
@@ -392,7 +392,7 @@
           <table id="table-database">
             <thead>
               <tr>
-                <th>Data Inserimento</th>
+                <th>ID</th>
                 <th>Venditore</th>
                 <th>Lead</th>
                 <th>App.ti</th>
@@ -409,9 +409,9 @@
                 <th>Nomi Caldi</th>
                 <th>Contr. Entrati</th>
                 <th>Note</th>
-                <th>Data Ins.</th>
-                <th>Data Chiam.</th>
-                <th>Data Mod.</th>
+                <th>Data Inserimento Dati</th>
+                <th>Data Chiamata</th>
+                <th>Data Modifica</th>
                 <th>Azioni</th>
               </tr>
             </thead>
@@ -430,7 +430,7 @@
 
         <div class="grid-inputs" style="margin-top: 0;">
           <div class="form-group">
-            <label for="mod-data-inserimento">Data Inserimento:</label>
+            <label for="mod-data-inserimento">Data Inserimento Dati:</label>
             <input type="date" id="mod-data-inserimento" />
           </div>
           <div class="form-group">
