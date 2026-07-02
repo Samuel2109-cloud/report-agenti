@@ -4,7 +4,7 @@
 
 // ─── CONFIGURAZIONE UTENTE ───────────────────────────────────────────────
 // Inserisci qui il link (URL Web App) fornito da Google Apps Script dopo il deployment
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXra7cSob4cpuzmtSjlhbUs10onnPQqa4QXU-YM-zYWa6ygweqXPjgMvt-d4wkNY2lVg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKt2d6mzLZyObkVkOaG3VN5cpCnZynIBj8KWEb4pVwlgF1ZTXNwxW-9nJuq3JYxxjr/exec";
 
 // ─── STATO DELL'APPLICAZIONE (DATABASE IN MEMORIA) ───────────────────────
 let database = [];
