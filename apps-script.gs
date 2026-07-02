@@ -87,6 +87,27 @@ function getFoglioDati() {
 
 function doGet(e) {
   var action = e.parameter.action;
+
+  // ─── AZIONE DI DIAGNOSTICA ───────────────────────────────────────────────
+  // Visita IL_TUO_URL/exec?action=debug nel browser per vedere esattamente
+  // quale foglio sta usando il backend e cosa contiene.
+  if (action === "debug") {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dbgSheet = getFoglioDati();
+    var info = {
+      nomeFile: ss.getName(),
+      foglioTrovatoDaBackend: dbgSheet ? dbgSheet.getName() : null,
+      ultimaRiga: dbgSheet ? dbgSheet.getLastRow() : 0,
+      ultimaColonna: dbgSheet ? dbgSheet.getLastColumn() : 0,
+      intestazioniRiga1: dbgSheet && dbgSheet.getLastRow() > 0
+        ? dbgSheet.getRange(1, 1, 1, Math.min(dbgSheet.getLastColumn(), 21)).getValues()[0]
+        : [],
+      tuttiIFogliDelloSpreadsheet: ss.getSheets().map(function (s) { return s.getName(); })
+    };
+    return ContentService.createTextOutput(JSON.stringify(info, null, 2))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
+
   var sheet = getFoglioDati();
   if (!sheet) {
     return ContentService.createTextOutput(JSON.stringify({ error: "Foglio dati non trovato nel Google Sheet." }))
@@ -213,7 +234,17 @@ function doPost(e) {
   var record = postData.record;
   
   if (action === "salva") {
-    var id = record.id || new Date().getTime();
+    // Validazione: senza un venditore valido NON si scrive nessuna riga.
+    // Questo impedisce in radice che finiscano nello sheet righe con colonne sballate.
+    var venditoreSalva = record && record.venditore ? record.venditore.toString().trim().toUpperCase() : "";
+    if (!venditoreSalva) {
+      return ContentService.createTextOutput(JSON.stringify({ error: "Campo Venditore obbligatorio: nessuna riga è stata scritta." }))
+                           .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // L'ID (colonna A) viene SEMPRE generato qui sul server, mai preso dal browser:
+    // così è garantito che sia sempre un numero pulito e mai una data o altro valore.
+    var id = new Date().getTime();
     var dataInserimento = record.dataInserimento || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
     var dataChiamata = record.dataChiamata || dataInserimento;
     var dataModifica = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
@@ -221,7 +252,7 @@ function doPost(e) {
     
     sheet.appendRow([
       id,
-      record.venditore ? record.venditore.toString().trim().toUpperCase() : "",
+      venditoreSalva,
       Number(record.lead) || 0,
       Number(record.appuntamenti) || 0,
       Number(record.giacenze) || 0,
@@ -248,6 +279,12 @@ function doPost(e) {
   }
   
   if (action === "modifica") {
+    var venditoreModifica = record && record.venditore ? record.venditore.toString().trim().toUpperCase() : "";
+    if (!venditoreModifica) {
+      return ContentService.createTextOutput(JSON.stringify({ error: "Campo Venditore obbligatorio: la modifica non è stata salvata." }))
+                           .setMimeType(ContentService.MimeType.JSON);
+    }
+
     var idToFind = Number(record.id);
     var values = sheet.getDataRange().getValues();
     var rowIndex = -1;
@@ -269,7 +306,7 @@ function doPost(e) {
     // Aggiorna le 21 colonne della riga trovata
     sheet.getRange(rowIndex, 1, 1, 21).setValues([[
       idToFind,
-      record.venditore ? record.venditore.toString().trim().toUpperCase() : "",
+      venditoreModifica,
       Number(record.lead) || 0,
       Number(record.appuntamenti) || 0,
       Number(record.giacenze) || 0,
