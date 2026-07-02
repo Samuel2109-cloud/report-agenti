@@ -4,7 +4,7 @@
 
 // ─── CONFIGURAZIONE UTENTE ───────────────────────────────────────────────
 // Inserisci qui il link (URL Web App) fornito da Google Apps Script dopo il deployment
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxAdN_uLLiXLuGVLgjpyOl-SIM8KSvGPLz5seT-eUVtfl6U0UzmFvfhdtmVDajBMpOG0Q/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXra7cSob4cpuzmtSjlhbUs10onnPQqa4QXU-YM-zYWa6ygweqXPjgMvt-d4wkNY2lVg/exec";
 
 // ─── STATO DELL'APPLICAZIONE (DATABASE IN MEMORIA) ───────────────────────
 const FALLBACK_VENDITORI = [
@@ -386,6 +386,13 @@ function caricaDatiDalCloud() {
         // Aggiorna le viste dopo aver caricato i dati
         aggiornaSelectVenditori();
         renderActiveTab();
+
+        // Il Database Generale deve SEMPRE riflettere tutte le righe dello sheet,
+        // ad ogni caricamento/aggiornamento dati, anche se non è la scheda attualmente attiva.
+        // Così quando l'utente ci clicca sopra trova già tutto aggiornato, senza dover aspettare.
+        if (activeTab !== "foglio5") {
+          renderFoglio5();
+        }
       }
       mostraLoading(false);
     })
