@@ -246,7 +246,7 @@ function caricaDatiDalCloud() {
 
           return {
             id: numeroPulito(r.id) || Date.now() + Math.random(),
-            data: dataChiamataRaw, // Mappa a Data Chiamata (i Richiami) per i filtri di tutti i fogli
+            data: dataRiferimentoRaw, // Mappa a Data Riferimento Dati per i filtri di tutti i fogli
             dataInserimento: dataInserimentoRaw || dataRiferimentoRaw,
             dataChiamata: dataChiamataRaw,
             dataModifica: dataModificaRaw,
@@ -291,7 +291,7 @@ function caricaDatiDalCloud() {
             document.getElementById("f7-inizio").value = dataMinima;
             document.getElementById("f7-fine").value = dataMassima;
 
-            document.getElementById("f8-data").value = dataMassima;
+            document.getElementById("f8-data").value = oggiISO();
           }
           isFirstLoad = false;
         }
@@ -941,7 +941,11 @@ function renderFoglio6() {
 
 // ─── RENDERING FOGLIO 8 (CHIAMATE GIORNO) ─────────────────────────────────
 function renderFoglio8() {
-  const f8Data = document.getElementById("f8-data").value;
+  let f8Data = document.getElementById("f8-data").value;
+  if (!f8Data) {
+    f8Data = oggiISO();
+    document.getElementById("f8-data").value = f8Data;
+  }
 
   const recordsFiltrati = database
     .filter((r) => r.dataChiamata === f8Data)
@@ -959,7 +963,7 @@ function renderFoglio8() {
     tbody.innerHTML += `
       <tr>
         <td><strong>${r.venditore}</strong></td>
-        <td>${formattaDataPerTabellaVisiva(r.data)}</td>
+        <td>${formattaDataPerTabellaVisiva(r.dataInserimento)}</td>
         <td>${r.lead}</td>
         <td>${r.appuntamenti}</td>
         <td>${r.giacenze}</td>
@@ -1158,7 +1162,7 @@ function renderFoglio5() {
   tbody.innerHTML = "";
 
   if (database.length === 0) {
-    tbody.innerHTML = `<tr><td colSpan="22" style="text-align: center; padding: 20px;">Nessun record nel Cloud.</td></tr>`;
+    tbody.innerHTML = `<tr><td colSpan="21" style="text-align: center; padding: 20px;">Nessun record nel Cloud.</td></tr>`;
     return;
   }
 
@@ -1171,7 +1175,7 @@ function renderFoglio5() {
     if (breakClass) tr.className = "venditore-break";
 
     tr.innerHTML = `
-      <td>${r.id}</td>
+      <td>${formattaDataPerTabellaVisiva(r.dataInserimento)}</td>
       <td>${r.venditore}</td>
       <td>${r.lead}</td>
       <td>${r.appuntamenti}</td>
@@ -1188,8 +1192,7 @@ function renderFoglio5() {
       <td>${r.nomiCaldi}</td>
       <td>${r.contrEntrati}</td>
       <td>${r.note}</td>
-      <td>${formattaDataPerTabellaVisiva(r.dataRiferimento || r.data)}</td>
-      <td>${formattaDataPerTabellaVisiva(r.dataInserimento)}</td>
+      <td>${formattaDataPerTabellaVisiva(r.dataRiferimento)}</td>
       <td>${formattaDataPerTabellaVisiva(r.dataChiamata)}</td>
       <td>${formattaDataPerTabellaVisiva(r.dataModifica)}</td>
       <td style="text-align: center; white-space: nowrap;">
