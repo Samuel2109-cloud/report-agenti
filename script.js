@@ -4,7 +4,7 @@
 
 // ─── CONFIGURAZIONE UTENTE ───────────────────────────────────────────────
 // Inserisci qui il link (URL Web App) fornito da Google Apps Script dopo il deployment
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxAdN_uLLiXLuGVLgjpyOl-SIM8KSvGPLz5seT-eUVtfl6U0UzmFvfhdtmVDajBMpOG0Q/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXra7cSob4cpuzmtSjlhbUs10onnPQqa4QXU-YM-zYWa6ygweqXPjgMvt-d4wkNY2lVg/exec";
 
 // ─── STATO DELL'APPLICAZIONE (DATABASE IN MEMORIA) ───────────────────────
 const FALLBACK_VENDITORI = [
@@ -434,10 +434,18 @@ function caricaVenditoriDalCloud() {
 function aggiornaSelectVenditori() {
   const venditoriCompleti = getListaVenditoriCompleta();
 
+  if (venditoriCompleti.length === 0) {
+    console.warn("⚠️ Nessun venditore ricevuto dal cloud. Verifica che apps-script.gs sia stato ridistribuito e che il foglio dati sia raggiungibile.");
+  }
+
+  const optionVuoto = venditoriCompleti.length === 0
+    ? '<option value="" disabled>⚠️ Nessun venditore trovato - verifica collegamento allo sheet</option>'
+    : "";
+
   // 1. Select Foglio 1
   const selF1 = document.getElementById("ins-venditore");
   const f1Val = selF1.value;
-  selF1.innerHTML = '<option value="">-- SELEZIONA VENDITORE --</option>';
+  selF1.innerHTML = '<option value="">-- SELEZIONA VENDITORE --</option>' + optionVuoto;
   venditoriCompleti.forEach((v) => {
     selF1.innerHTML += `<option value="${v}">${v}</option>`;
   });
