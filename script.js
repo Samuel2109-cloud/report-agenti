@@ -210,6 +210,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Registra Eventi UI
   inizializzaEventiUI();
+
+  // Auto-refresh periodico continuo ogni 30 secondi per aggiornare dati e tendine dallo sheet
+  setInterval(() => {
+    caricaVenditoriDalCloud();
+    caricaDatiDalCloud();
+  }, 30000);
 });
 
 // ─── REGISTRAZIONE EVENTI UI ─────────────────────────────────────────────
@@ -287,13 +293,6 @@ function switchTab(tabId) {
     }
   });
 
-  if (tabId === "foglio8") {
-    const f8Input = document.getElementById("f8-data");
-    if (f8Input) {
-      f8Input.value = oggiISO();
-    }
-  }
-
   renderActiveTab();
 }
 
@@ -323,9 +322,9 @@ function caricaDatiDalCloud() {
           const dataRiferimentoRaw = estraiDataYMD(r.dataRiferimento || r.data_riferimento) || dataInserimentoRaw || dataChiamataRaw || oggiISO();
 
           return {
-            id: r.id !== undefined && r.id !== null ? String(r.id).trim() : String(Date.now() + Math.random()),
+            id: numeroPulito(r.id) || Date.now() + Math.random(),
             data: dataRiferimentoRaw, // Mappa a Data Riferimento Dati per i filtri di tutti i fogli
-            dataInserimento: dataInserimentoRaw || dataRiferimentoRaw || oggiISO(),
+            dataInserimento: dataInserimentoRaw || dataRiferimentoRaw,
             dataChiamata: dataChiamataRaw,
             dataModifica: dataModificaRaw,
             dataRiferimento: dataRiferimentoRaw,
@@ -346,7 +345,7 @@ function caricaDatiDalCloud() {
             contrEntrati: valoreTesto(r.contrEntrati),
             note: valoreTesto(r.note),
           };
-        });
+        }).filter((r) => r.venditore);
         
         // Estraiamo dinamicamente in tempo reale tutti i venditori unici presenti nel database caricato
         const setVenditori = new Set([...listaVenditori]);
@@ -404,19 +403,22 @@ function caricaVenditoriDalCloud() {
       const loaded = sorgente
         .map(nomeNormalizzato)
         .filter((v) => v !== "" && v !== "UNDEFINED" && v !== "[OBJECT OBJECT]");
-      
-      // Uniamo sempre i venditori caricati dal cloud con quelli di fallback di default.
-      // In questo modo l'applicazione mostra immediatamente tutti i 17 venditori principali da colonna B
-      // e allo stesso tempo supporta pienamente l'aggiunta dinamica di nuovi venditori!
-      const setVenditori = new Set([...loaded, ...FALLBACK_VENDITORI]);
-      listaVenditori = [...setVenditori].filter(v => v && v.trim() !== "");
+
+      // La tendina riflette dinamicamente ESATTAMENTE i nomi presenti in colonna B dello sheet
+      // (deduplicati). Nessun nome statico/fisso viene più aggiunto: se un venditore viene
+      // rinominato o rimosso dallo sheet, sparisce anche dalla tendina al refresh successivo.
+      listaVenditori = [...new Set(loaded)].filter(v => v && v.trim() !== "");
       listaVenditori.sort();
       aggiornaSelectVenditori();
     })
     .catch((err) => {
       console.error("Errore caricamento venditori:", err);
-      listaVenditori = [...FALLBACK_VENDITORI];
-      listaVenditori.sort();
+      // Solo in caso di errore di rete/caricamento usiamo la lista di fallback locale,
+      // per non lasciare la tendina vuota mentre non si riesce a raggiungere lo sheet.
+      if (listaVenditori.length === 0) {
+        listaVenditori = [...FALLBACK_VENDITORI];
+        listaVenditori.sort();
+      }
       aggiornaSelectVenditori();
     });
 }
@@ -517,7 +519,7 @@ function aggiungiAgenteManuale() {
     body: JSON.stringify({ action: "salva", record })
   })
     .then(() => {
-      alert("✅ Agente aggiunto e registrato nel Cloud!");
+      alert("✅ Agente aggiunto e registrato nel Foglio1!");
       setTimeout(() => {
         caricaVenditoriDalCloud();
         caricaDatiDalCloud();
@@ -633,7 +635,7 @@ function eliminaRecord(idRecord) {
 
 // ─── MODALE MODIFICA RECORD ───────────────────────────────────────────────
 function apriModifica(idRecord) {
-  const r = database.find((rec) => String(rec.id) === String(idRecord));
+  const r = database.find((rec) => rec.id === idRecord);
   if (!r) {
     alert("Record non trovato.");
     return;

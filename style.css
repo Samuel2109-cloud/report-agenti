@@ -202,7 +202,8 @@ textarea {
    ========================================================================= */
 .table-container {
   width: 100%;
-  overflow-x: auto;
+  overflow: auto;
+  max-height: 68vh;
   margin-top: 15px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -228,6 +229,9 @@ th {
   padding: 12px 10px;
   white-space: nowrap;
   border-bottom: 2px solid #334155;
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 td {
@@ -282,7 +286,8 @@ tbody tr.venditore-break td {
 }
 
 .table-sticky-first th:first-child {
-  z-index: 3;
+  top: 0;
+  z-index: 5;
   background-color: #0f172a !important;
 }
 
@@ -332,7 +337,8 @@ tbody tr.venditore-break td {
 
 .table-sticky-two th:first-child,
 .table-sticky-two th:nth-child(2) {
-  z-index: 3;
+  top: 0;
+  z-index: 5;
   background-color: #0f172a !important;
 }
 

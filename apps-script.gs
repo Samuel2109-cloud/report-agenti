@@ -44,14 +44,14 @@
 function getFoglioDati() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. Prova prima con "DATABASE REPORT VENDITORI" (il foglio principale dell'utente)
-  var sheet = ss.getSheetByName("DATABASE REPORT VENDITORI");
+  // 1. Prova con "Foglio1" se ha righe di dati
+  var sheet = ss.getSheetByName("Foglio1");
   if (sheet && sheet.getLastRow() > 1) {
     return sheet;
   }
   
-  // 2. Prova con "Foglio1" se ha righe di dati
-  sheet = ss.getSheetByName("Foglio1");
+  // 2. Prova con "DATABASE REPORT VENDITORI"
+  sheet = ss.getSheetByName("DATABASE REPORT VENDITORI");
   if (sheet && sheet.getLastRow() > 1) {
     return sheet;
   }
@@ -105,35 +105,23 @@ function doGet(e) {
       var rowVal = values[i];
       var rowDisp = displayValues[i];
       
-      // Controlliamo se la riga è completamente vuota
-      var rigaVuota = true;
-      for (var col = 0; col < rowVal.length; col++) {
-        if (rowVal[col] !== "" && rowVal[col] !== null && rowVal[col] !== undefined) {
-          rigaVuota = false;
-          break;
-        }
-      }
-      if (rigaVuota) {
-        continue;
-      }
-      
       var venditoreRaw = rowVal[1] ? rowVal[1].toString().trim().toUpperCase() : "";
-      // Saltiamo solo se è palesemente un'intestazione duplicata o riga di intestazione accidentale
-      if (venditoreRaw === "VENDITORE" || venditoreRaw === "NOME VENDITORE") {
+      // Se non c'è il venditore in colonna B, saltiamo la riga
+      if (!venditoreRaw || venditoreRaw === "VENDITORE" || venditoreRaw === "NOME VENDITORE" || venditoreRaw === "UNDEFINED") {
         continue;
       }
       
-      var id = rowVal[0] ? rowVal[0].toString().trim() : "";
+      var id = rowVal[0];
       // Se l'ID in colonna A è vuoto, generiamo un ID univoco e lo scriviamo sul foglio
-      if (!id) {
-        id = "ID_" + (new Date().getTime() + i);
+      if (!id || isNaN(Number(id))) {
+        id = new Date().getTime() + i;
         sheet.getRange(i + 1, 1).setValue(id);
         rowVal[0] = id;
         sheetModified = true;
       }
       
       data.push({
-        id: id,
+        id: Number(id),
         venditore: venditoreRaw,
         lead: Number(rowVal[2]) || 0,
         appuntamenti: Number(rowVal[3]) || 0,
@@ -167,48 +155,31 @@ function doGet(e) {
   
   if (action === "getAgenti") {
     var agenti = [];
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheets = ss.getSheets();
-    
-    // Scansioniamo esclusivamente la colonna B (2a colonna) di ciascun foglio rilevante nello spreadsheet
-    for (var i = 0; i < sheets.length; i++) {
-      var s = sheets[i];
-      var name = s.getName().toUpperCase();
-      
-      // Escludiamo fogli di riepilogo, grafici, mensili o tabelle pivot dove la colonna B ha numeri
-      if (name.indexOf("GRAFIC") !== -1 || 
-          name.indexOf("DASHBOARD") !== -1 || 
-          name.indexOf("PIVOT") !== -1 || 
-          name.indexOf("MENSILE") !== -1 || 
-          name.indexOf("IMPOSTAZ") !== -1 ||
-          name.indexOf("CHART") !== -1 ||
-          name.indexOf("CONFRONTO") !== -1) {
-        continue;
-      }
-      
-      var lastRow = s.getLastRow();
-      var lastCol = s.getLastColumn();
-      
-      // Se il foglio ha righe ed ha almeno 2 colonne (quindi possiede la colonna B)
-      if (lastRow > 1 && lastCol >= 2) {
-        var colValues = s.getRange(2, 2, lastRow - 1, 1).getValues();
+    var sheetAgenti = getFoglioDati();
+
+    // Scansioniamo esclusivamente la colonna B (2a colonna) del foglio database
+    if (sheetAgenti) {
+      var lastRow = sheetAgenti.getLastRow();
+      if (lastRow > 1) {
+        var colValues = sheetAgenti.getRange(2, 2, lastRow - 1, 1).getValues();
         for (var r = 0; r < colValues.length; r++) {
           var valRaw = colValues[r][0];
           if (valRaw) {
             var val = valRaw.toString().trim().toUpperCase();
             // Escludiamo stringhe vuote, numeri ID, intestazioni o diciture generiche di sistema
-            if (val && 
-                isNaN(Number(val)) && 
-                val !== "UNDEFINED" && 
-                val !== "[OBJECT OBJECT]" && 
-                val !== "VENDITORE" && 
-                val !== "ID" && 
-                val !== "NOME VENDITORE" && 
-                val !== "NOME" && 
-                val !== "AGENTE" && 
+            if (val &&
+                isNaN(Number(val)) &&
+                val !== "UNDEFINED" &&
+                val !== "[OBJECT OBJECT]" &&
+                val !== "VENDITORE" &&
+                val !== "ID" &&
+                val !== "NOME VENDITORE" &&
+                val !== "NOME" &&
+                val !== "AGENTE" &&
                 val !== "NOME AGENTE" &&
                 val.indexOf("TOTALE") === -1 &&
                 val.indexOf("TOTAL") === -1) {
+              // Deduplica: un nome ripetuto più volte viene restituito una sola volta
               if (agenti.indexOf(val) === -1) {
                 agenti.push(val);
               }
@@ -217,7 +188,7 @@ function doGet(e) {
         }
       }
     }
-    
+
     // Ordiniamo alfabeticamente per eleganza d'uso
     agenti.sort();
     
@@ -277,14 +248,12 @@ function doPost(e) {
   }
   
   if (action === "modifica") {
-    var idToFindStr = String(record.id).trim();
-    var idToFindNum = Number(record.id);
+    var idToFind = Number(record.id);
     var values = sheet.getDataRange().getValues();
     var rowIndex = -1;
     
     for (var i = 1; i < values.length; i++) {
-      var valColA = values[i][0];
-      if (String(valColA).trim() === idToFindStr || (!isNaN(idToFindNum) && Number(valColA) === idToFindNum)) {
+      if (Number(values[i][0]) === idToFind) {
         rowIndex = i + 1; // Le righe di Google Sheets sono 1-based
         break;
       }
@@ -299,7 +268,7 @@ function doPost(e) {
     
     // Aggiorna le 21 colonne della riga trovata
     sheet.getRange(rowIndex, 1, 1, 21).setValues([[
-      record.id,
+      idToFind,
       record.venditore ? record.venditore.toString().trim().toUpperCase() : "",
       Number(record.lead) || 0,
       Number(record.appuntamenti) || 0,
@@ -327,14 +296,12 @@ function doPost(e) {
   }
   
   if (action === "elimina") {
-    var idToEliminateStr = String(postData.id).trim();
-    var idToEliminateNum = Number(postData.id);
+    var idToEliminate = Number(postData.id);
     var values = sheet.getDataRange().getValues();
     var rowIndex = -1;
     
     for (var i = 1; i < values.length; i++) {
-      var valColA = values[i][0];
-      if (String(valColA).trim() === idToEliminateStr || (!isNaN(idToEliminateNum) && Number(valColA) === idToEliminateNum)) {
+      if (Number(values[i][0]) === idToEliminate) {
         rowIndex = i + 1;
         break;
       }
