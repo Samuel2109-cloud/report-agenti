@@ -127,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const oggi = oggiISO();
   const inizioMese = primoDelMeseISO();
 
+  document.getElementById("ins-data-riferimento").value = oggi;
   document.getElementById("ins-data-inserimento").value = oggi;
   document.getElementById("ins-data-chiamata").value = oggi;
 
@@ -240,7 +241,7 @@ function caricaDatiDalCloud() {
           const dataInserimentoRaw = estraiDataYMD(r.dataInserimento || r.data_inserimento);
           const dataChiamataRaw = estraiDataYMD(r.dataChiamata || r.data_chiamata);
           const dataModificaRaw = estraiDataYMD(r.dataModifica || r.data_modifica);
-          const dataRiferimentoRaw = dataInserimentoRaw || dataChiamataRaw || oggiISO();
+          const dataRiferimentoRaw = estraiDataYMD(r.dataRiferimento || r.data_riferimento) || dataInserimentoRaw || dataChiamataRaw || oggiISO();
 
           return {
             id: numeroPulito(r.id) || Date.now() + Math.random(),
@@ -248,6 +249,7 @@ function caricaDatiDalCloud() {
             dataInserimento: dataInserimentoRaw || dataRiferimentoRaw,
             dataChiamata: dataChiamataRaw || dataRiferimentoRaw,
             dataModifica: dataModificaRaw,
+            dataRiferimento: dataRiferimentoRaw,
             venditore: nomeNormalizzato(r.venditore ?? r.agente ?? r.nome),
             lead: numeroPulito(r.lead),
             appuntamenti: numeroPulito(r.appuntamenti),
@@ -359,10 +361,12 @@ function aggiungiAgenteManuale() {
   nuovoAgenteEl.value = "";
 
   const oggi = oggiISO();
+  const insDataInserimento = document.getElementById("ins-data-inserimento").value || oggi;
   const record = {
     id: Date.now(),
-    dataInserimento: document.getElementById("ins-data-inserimento").value || oggi,
+    dataInserimento: insDataInserimento,
     dataChiamata: document.getElementById("ins-data-chiamata").value || oggi,
+    dataRiferimento: document.getElementById("ins-data-riferimento").value || insDataInserimento,
     venditore: nome,
     lead: 0,
     appuntamenti: 0,
@@ -402,11 +406,16 @@ function aggiungiAgenteManuale() {
 
 function salvaDati() {
   const insVenditore = document.getElementById("ins-venditore").value;
+  const insDataRiferimento = document.getElementById("ins-data-riferimento").value;
   const insDataInserimento = document.getElementById("ins-data-inserimento").value;
   const insDataChiamata = document.getElementById("ins-data-chiamata").value;
 
   if (!insVenditore) {
     alert("Seleziona un venditore!");
+    return;
+  }
+  if (!insDataRiferimento) {
+    alert("Compila la Data Riferimento Dati!");
     return;
   }
   if (!insDataInserimento) {
@@ -419,6 +428,7 @@ function salvaDati() {
     id: Date.now(),
     dataInserimento: insDataInserimento || oggi,
     dataChiamata: insDataChiamata || oggi,
+    dataRiferimento: insDataRiferimento || insDataInserimento || oggi,
     venditore: insVenditore.trim().toUpperCase(),
     lead: parseInt(document.getElementById("ins-lead").value) || 0,
     appuntamenti: parseInt(document.getElementById("ins-appuntamenti").value) || 0,
@@ -460,6 +470,7 @@ function salvaDati() {
       document.getElementById("ins-nomi-caldi").value = "";
       document.getElementById("ins-contr-entr").value = "";
       document.getElementById("ins-note").value = "";
+      document.getElementById("ins-data-riferimento").value = oggiISO();
       document.getElementById("ins-data-inserimento").value = oggiISO();
       document.getElementById("ins-data-chiamata").value = oggiISO();
       
@@ -498,6 +509,7 @@ function apriModifica(idRecord) {
   }
 
   modId = r.id;
+  document.getElementById("mod-data-riferimento").value = r.dataRiferimento || r.data || "";
   document.getElementById("mod-data-inserimento").value = r.dataInserimento || "";
   document.getElementById("mod-data-chiamata").value = r.dataChiamata || "";
   document.getElementById("mod-venditore").value = r.venditore || "";
@@ -530,11 +542,16 @@ function chiudiModifica() {
 function salvaModifica() {
   if (!modId) return;
   const modVenditore = document.getElementById("mod-venditore").value;
+  const modDataRiferimento = document.getElementById("mod-data-riferimento").value;
   const modDataInserimento = document.getElementById("mod-data-inserimento").value;
   const venditoreNorm = nomeNormalizzato(modVenditore);
 
   if (!venditoreNorm) {
     alert("Il nome del venditore non può essere vuoto!");
+    return;
+  }
+  if (!modDataRiferimento) {
+    alert("Compila la Data Riferimento Dati!");
     return;
   }
   if (!modDataInserimento) {
@@ -546,6 +563,7 @@ function salvaModifica() {
     id: modId,
     dataChiamata: document.getElementById("mod-data-chiamata").value || "",
     dataInserimento: modDataInserimento || "",
+    dataRiferimento: modDataRiferimento || "",
     venditore: venditoreNorm,
     lead: parseInt(document.getElementById("mod-lead").value) || 0,
     appuntamenti: parseInt(document.getElementById("mod-appuntamenti").value) || 0,
@@ -1113,7 +1131,7 @@ function renderFoglio5() {
   tbody.innerHTML = "";
 
   if (database.length === 0) {
-    tbody.innerHTML = `<tr><td colSpan="21" style="text-align: center; padding: 20px;">Nessun record nel Cloud.</td></tr>`;
+    tbody.innerHTML = `<tr><td colSpan="22" style="text-align: center; padding: 20px;">Nessun record nel Cloud.</td></tr>`;
     return;
   }
 
@@ -1143,6 +1161,7 @@ function renderFoglio5() {
       <td>${r.nomiCaldi}</td>
       <td>${r.contrEntrati}</td>
       <td>${r.note}</td>
+      <td>${formattaDataPerTabellaVisiva(r.dataRiferimento || r.data)}</td>
       <td>${formattaDataPerTabellaVisiva(r.dataInserimento)}</td>
       <td>${formattaDataPerTabellaVisiva(r.dataChiamata)}</td>
       <td>${formattaDataPerTabellaVisiva(r.dataModifica)}</td>

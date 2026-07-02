@@ -37,6 +37,7 @@
  * Colonna R (18): Data Inserimento
  * Colonna S (19): Data Chiamata
  * Colonna T (20): Data Modifica
+ * Colonna U (21): Data Riferimento Dati
  */
 
 function doGet(e) {
@@ -79,7 +80,8 @@ function doGet(e) {
         note: rowVal[16] ? rowVal[16].toString().trim() : "",
         dataInserimento: rowDisp[17] || "", // Preserviamo la stringa visualizzata della data
         dataChiamata: rowDisp[18] || "",
-        dataModifica: rowDisp[19] || ""
+        dataModifica: rowDisp[19] || "",
+        dataRiferimento: rowDisp[20] || ""
       });
     }
     
@@ -142,6 +144,7 @@ function doPost(e) {
     var dataInserimento = record.dataInserimento || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
     var dataChiamata = record.dataChiamata || dataInserimento;
     var dataModifica = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+    var dataRiferimento = record.dataRiferimento || dataInserimento;
     
     sheet.appendRow([
       id,
@@ -163,7 +166,8 @@ function doPost(e) {
       record.note || "",
       dataInserimento,
       dataChiamata,
-      dataModifica
+      dataModifica,
+      dataRiferimento
     ]);
     
     return ContentService.createTextOutput(JSON.stringify({ success: true, id: id }))
@@ -189,8 +193,8 @@ function doPost(e) {
     
     var dataModifica = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
     
-    // Aggiorna le 20 colonne della riga trovata
-    sheet.getRange(rowIndex, 1, 1, 20).setValues([[
+    // Aggiorna le 21 colonne della riga trovata
+    sheet.getRange(rowIndex, 1, 1, 21).setValues([[
       idToFind,
       record.venditore ? record.venditore.toString().trim().toUpperCase() : "",
       Number(record.lead) || 0,
@@ -210,7 +214,8 @@ function doPost(e) {
       record.note || "",
       record.dataInserimento || "",
       record.dataChiamata || "",
-      dataModifica
+      dataModifica,
+      record.dataRiferimento || ""
     ]]);
     
     return ContentService.createTextOutput(JSON.stringify({ success: true }))
