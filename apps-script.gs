@@ -44,14 +44,14 @@
 function getFoglioDati() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. Prova con "Foglio1" se ha righe di dati
-  var sheet = ss.getSheetByName("Foglio1");
+  // 1. Prova prima con "DATABASE REPORT VENDITORI" (il foglio principale dell'utente)
+  var sheet = ss.getSheetByName("DATABASE REPORT VENDITORI");
   if (sheet && sheet.getLastRow() > 1) {
     return sheet;
   }
   
-  // 2. Prova con "DATABASE REPORT VENDITORI"
-  sheet = ss.getSheetByName("DATABASE REPORT VENDITORI");
+  // 2. Prova con "Foglio1" se ha righe di dati
+  sheet = ss.getSheetByName("Foglio1");
   if (sheet && sheet.getLastRow() > 1) {
     return sheet;
   }
@@ -105,23 +105,35 @@ function doGet(e) {
       var rowVal = values[i];
       var rowDisp = displayValues[i];
       
-      var venditoreRaw = rowVal[1] ? rowVal[1].toString().trim().toUpperCase() : "";
-      // Se non c'è il venditore in colonna B, saltiamo la riga
-      if (!venditoreRaw || venditoreRaw === "VENDITORE" || venditoreRaw === "NOME VENDITORE" || venditoreRaw === "UNDEFINED") {
+      // Controlliamo se la riga è completamente vuota
+      var rigaVuota = true;
+      for (var col = 0; col < rowVal.length; col++) {
+        if (rowVal[col] !== "" && rowVal[col] !== null && rowVal[col] !== undefined) {
+          rigaVuota = false;
+          break;
+        }
+      }
+      if (rigaVuota) {
         continue;
       }
       
-      var id = rowVal[0];
+      var venditoreRaw = rowVal[1] ? rowVal[1].toString().trim().toUpperCase() : "";
+      // Saltiamo solo se è palesemente un'intestazione duplicata o riga di intestazione accidentale
+      if (venditoreRaw === "VENDITORE" || venditoreRaw === "NOME VENDITORE") {
+        continue;
+      }
+      
+      var id = rowVal[0] ? rowVal[0].toString().trim() : "";
       // Se l'ID in colonna A è vuoto, generiamo un ID univoco e lo scriviamo sul foglio
-      if (!id || isNaN(Number(id))) {
-        id = new Date().getTime() + i;
+      if (!id) {
+        id = "ID_" + (new Date().getTime() + i);
         sheet.getRange(i + 1, 1).setValue(id);
         rowVal[0] = id;
         sheetModified = true;
       }
       
       data.push({
-        id: Number(id),
+        id: id,
         venditore: venditoreRaw,
         lead: Number(rowVal[2]) || 0,
         appuntamenti: Number(rowVal[3]) || 0,
@@ -158,9 +170,22 @@ function doGet(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheets = ss.getSheets();
     
-    // Scansioniamo esclusivamente la colonna B (2a colonna) di ciascun foglio nello spreadsheet
+    // Scansioniamo esclusivamente la colonna B (2a colonna) di ciascun foglio rilevante nello spreadsheet
     for (var i = 0; i < sheets.length; i++) {
       var s = sheets[i];
+      var name = s.getName().toUpperCase();
+      
+      // Escludiamo fogli di riepilogo, grafici, mensili o tabelle pivot dove la colonna B ha numeri
+      if (name.indexOf("GRAFIC") !== -1 || 
+          name.indexOf("DASHBOARD") !== -1 || 
+          name.indexOf("PIVOT") !== -1 || 
+          name.indexOf("MENSILE") !== -1 || 
+          name.indexOf("IMPOSTAZ") !== -1 ||
+          name.indexOf("CHART") !== -1 ||
+          name.indexOf("CONFRONTO") !== -1) {
+        continue;
+      }
+      
       var lastRow = s.getLastRow();
       var lastCol = s.getLastColumn();
       
@@ -252,12 +277,14 @@ function doPost(e) {
   }
   
   if (action === "modifica") {
-    var idToFind = Number(record.id);
+    var idToFindStr = String(record.id).trim();
+    var idToFindNum = Number(record.id);
     var values = sheet.getDataRange().getValues();
     var rowIndex = -1;
     
     for (var i = 1; i < values.length; i++) {
-      if (Number(values[i][0]) === idToFind) {
+      var valColA = values[i][0];
+      if (String(valColA).trim() === idToFindStr || (!isNaN(idToFindNum) && Number(valColA) === idToFindNum)) {
         rowIndex = i + 1; // Le righe di Google Sheets sono 1-based
         break;
       }
@@ -272,7 +299,7 @@ function doPost(e) {
     
     // Aggiorna le 21 colonne della riga trovata
     sheet.getRange(rowIndex, 1, 1, 21).setValues([[
-      idToFind,
+      record.id,
       record.venditore ? record.venditore.toString().trim().toUpperCase() : "",
       Number(record.lead) || 0,
       Number(record.appuntamenti) || 0,
@@ -300,12 +327,14 @@ function doPost(e) {
   }
   
   if (action === "elimina") {
-    var idToEliminate = Number(postData.id);
+    var idToEliminateStr = String(postData.id).trim();
+    var idToEliminateNum = Number(postData.id);
     var values = sheet.getDataRange().getValues();
     var rowIndex = -1;
     
     for (var i = 1; i < values.length; i++) {
-      if (Number(values[i][0]) === idToEliminate) {
+      var valColA = values[i][0];
+      if (String(valColA).trim() === idToEliminateStr || (!isNaN(idToEliminateNum) && Number(valColA) === idToEliminateNum)) {
         rowIndex = i + 1;
         break;
       }

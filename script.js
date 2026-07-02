@@ -210,12 +210,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Registra Eventi UI
   inizializzaEventiUI();
-
-  // Auto-refresh periodico continuo ogni 30 secondi per aggiornare dati e tendine dallo sheet
-  setInterval(() => {
-    caricaVenditoriDalCloud();
-    caricaDatiDalCloud();
-  }, 30000);
 });
 
 // ─── REGISTRAZIONE EVENTI UI ─────────────────────────────────────────────
@@ -293,6 +287,13 @@ function switchTab(tabId) {
     }
   });
 
+  if (tabId === "foglio8") {
+    const f8Input = document.getElementById("f8-data");
+    if (f8Input) {
+      f8Input.value = oggiISO();
+    }
+  }
+
   renderActiveTab();
 }
 
@@ -322,9 +323,9 @@ function caricaDatiDalCloud() {
           const dataRiferimentoRaw = estraiDataYMD(r.dataRiferimento || r.data_riferimento) || dataInserimentoRaw || dataChiamataRaw || oggiISO();
 
           return {
-            id: numeroPulito(r.id) || Date.now() + Math.random(),
+            id: r.id !== undefined && r.id !== null ? String(r.id).trim() : String(Date.now() + Math.random()),
             data: dataRiferimentoRaw, // Mappa a Data Riferimento Dati per i filtri di tutti i fogli
-            dataInserimento: dataInserimentoRaw || dataRiferimentoRaw,
+            dataInserimento: dataInserimentoRaw || dataRiferimentoRaw || oggiISO(),
             dataChiamata: dataChiamataRaw,
             dataModifica: dataModificaRaw,
             dataRiferimento: dataRiferimentoRaw,
@@ -345,7 +346,7 @@ function caricaDatiDalCloud() {
             contrEntrati: valoreTesto(r.contrEntrati),
             note: valoreTesto(r.note),
           };
-        }).filter((r) => r.venditore);
+        });
         
         // Estraiamo dinamicamente in tempo reale tutti i venditori unici presenti nel database caricato
         const setVenditori = new Set([...listaVenditori]);
@@ -516,7 +517,7 @@ function aggiungiAgenteManuale() {
     body: JSON.stringify({ action: "salva", record })
   })
     .then(() => {
-      alert("✅ Agente aggiunto e registrato nel Foglio1!");
+      alert("✅ Agente aggiunto e registrato nel Cloud!");
       setTimeout(() => {
         caricaVenditoriDalCloud();
         caricaDatiDalCloud();
@@ -632,7 +633,7 @@ function eliminaRecord(idRecord) {
 
 // ─── MODALE MODIFICA RECORD ───────────────────────────────────────────────
 function apriModifica(idRecord) {
-  const r = database.find((rec) => rec.id === idRecord);
+  const r = database.find((rec) => String(rec.id) === String(idRecord));
   if (!r) {
     alert("Record non trovato.");
     return;
