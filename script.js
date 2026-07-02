@@ -7,8 +7,60 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXra7cSob4cpuzmtSjlhbUs10onnPQqa4QXU-YM-zYWa6ygweqXPjgMvt-d4wkNY2lVg/exec";
 
 // ─── STATO DELL'APPLICAZIONE (DATABASE IN MEMORIA) ───────────────────────
+const FALLBACK_VENDITORI = [
+  "ADDONIZIO GIOVANNI - PUGLIA",
+  "BENEDETTO CAVALLO - LOMBARDIA",
+  "BRUNETTI LETIZIA - MARCHE",
+  "CAGNO DANIELE (SALVATORE) - SICILIA",
+  "CANOVA STEFANO - LOMBARDIA",
+  "CAPO FRANCHINO PAOLO - LOMBARDIA / VENETO",
+  "CARRANI STEFANO - TOSCANA",
+  "CHIAPPA STEFANIA - LIGURIA / TOSCANA",
+  "COLOMBO TIZIANO - LOMBARDIA",
+  "CONTINO GIUSEPPE - CAMPANIA",
+  "COSIMO CALABRESE - SICILIA",
+  "CROCI STEFANO - EMILIA-ROMAGNA",
+  "DA VERO EMILIO - LOMBARDIA",
+  "DI PAOLA LUIGI - CAMPANIA",
+  "DONNINI SERENA - PUGLIA",
+  "FALASCHETTI ANDREA - MARCHE",
+  "FERRI ANDREA (BOLLE BLU SRLS) - PIEMONTE",
+  "FRANCESCA SCHIRMO - SICILIA",
+  "GIANLUCA FABRIZIO CEDRO - PIEMONTE",
+  "GIACOMELLI SERGIO - LOMBARDIA",
+  "IEMMA RICCARDO - LOMBARDIA",
+  "LIBRETTI MARCO - EMILIA-ROMAGNA",
+  "LO CASCIO ANDREA - SICILIA",
+  "LUCCI LUCIANO - ABRUZZO",
+  "MATTEO BALDAN - LOMBARDIA",
+  "MINETTI STEFANO - VALLE D'AOSTA / PIEMONTE",
+  "MORITTU ALDO - EMILIA-ROMAGNA",
+  "MOTTA GIOVANNI - EMILIA-ROMAGNA",
+  "MOTTA GIOVANNI - LOMBARDIA",
+  "NICOLA AGOSTINO - PIEMONTE",
+  "NIRTA TOMMASO - PIEMONTE",
+  "PALLADINO PIETRO - LAZIO",
+  "PAOLO TEBAI - LOMBARDIA",
+  "PAOLO TEBAI - PIEMONTE",
+  "PIOZZI FABIO WARNER - LOMBARDIA",
+  "PITARO ENRICO - VENETO",
+  "PIZZATI TIZIANO - VENETO",
+  "POZZANI LUCA - VENETO",
+  "PROVASI ALESSANDRO - EMILIA-ROMAGNA",
+  "PROVASI ALESSANDRO - VENETO",
+  "RICCIARDI FERRUCCIO - CAMPANIA",
+  "RIZZI VALTER - PIEMONTE / LOMBARDIA",
+  "SAIONI MAURO - UMBRIA / TOSCANA",
+  "TAMIGI MARCO - LOMBARDIA",
+  "TANI ANDREA - TOSCANA",
+  "TRANFAGLIA LUIGI - UMBRIA / TOSCANA",
+  "VALZOLGHER ANDREA - TRENTINO-ALTO ADIGE / VENETO",
+  "VISENTIN DAVIDE - LOMBARDIA",
+  "VISEGLIA VITO - PIEMONTE"
+];
+
 let database = [];
-let listaVenditori = [];
+let listaVenditori = [...FALLBACK_VENDITORI];
 let activeTab = "foglio1";
 let isModalOpen = false;
 let modId = null;
@@ -158,15 +210,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Registra Eventi UI
   inizializzaEventiUI();
+
+  // Auto-refresh periodico continuo ogni 30 secondi per aggiornare dati e tendine dallo sheet
+  setInterval(() => {
+    caricaVenditoriDalCloud();
+    caricaDatiDalCloud();
+  }, 30000);
 });
 
 // ─── REGISTRAZIONE EVENTI UI ─────────────────────────────────────────────
 function inizializzaEventiUI() {
+  // Pulsante Refresh Manuale Dati
+  const btnRefresh = document.getElementById("btn-refresh-dati");
+  if (btnRefresh) {
+    btnRefresh.addEventListener("click", () => {
+      mostraLoading(true);
+      caricaVenditoriDalCloud();
+      caricaDatiDalCloud();
+      // Effetto visivo di rotazione o feedback
+      btnRefresh.style.opacity = "0.7";
+      setTimeout(() => { btnRefresh.style.opacity = "1"; }, 500);
+    });
+  }
+
   // Cambio Tab
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const tabId = btn.getAttribute("data-tab");
-      switchTab(tabId);
+      if (tabId) {
+        switchTab(tabId);
+      }
     });
   });
 
@@ -274,6 +347,16 @@ function caricaDatiDalCloud() {
           };
         }).filter((r) => r.venditore);
         
+        // Estraiamo dinamicamente in tempo reale tutti i venditori unici presenti nel database caricato
+        const setVenditori = new Set([...listaVenditori]);
+        database.forEach((r) => {
+          if (r.venditore) {
+            setVenditori.add(r.venditore);
+          }
+        });
+        listaVenditori = [...setVenditori].filter(v => v && v.trim() !== "");
+        listaVenditori.sort();
+        
         // Se è il primo caricamento, impostiamo i filtri in modo che contengano tutti i dati presenti nel database
         if (isFirstLoad && database.length > 0) {
           const dateValide = database.map((r) => r.data).filter((d) => d && d.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
@@ -317,14 +400,24 @@ function caricaVenditoriDalCloud() {
     .then((res) => res.json())
     .then((data) => {
       const sorgente = Array.isArray(data) ? data : (Array.isArray(data?.venditori) ? data.venditori : []);
-      listaVenditori = sorgente
+      const loaded = sorgente
         .map(nomeNormalizzato)
         .filter((v) => v !== "" && v !== "UNDEFINED" && v !== "[OBJECT OBJECT]");
-      listaVenditori = [...new Set(listaVenditori)].sort();
       
+      // Uniamo sempre i venditori caricati dal cloud con quelli di fallback di default.
+      // In questo modo l'applicazione mostra immediatamente tutti i 17 venditori principali da colonna B
+      // e allo stesso tempo supporta pienamente l'aggiunta dinamica di nuovi venditori!
+      const setVenditori = new Set([...loaded, ...FALLBACK_VENDITORI]);
+      listaVenditori = [...setVenditori].filter(v => v && v.trim() !== "");
+      listaVenditori.sort();
       aggiornaSelectVenditori();
     })
-    .catch((err) => console.error("Errore caricamento venditori:", err));
+    .catch((err) => {
+      console.error("Errore caricamento venditori:", err);
+      listaVenditori = [...FALLBACK_VENDITORI];
+      listaVenditori.sort();
+      aggiornaSelectVenditori();
+    });
 }
 
 // Popola dinamicamente tutte le select del venditore
@@ -505,7 +598,10 @@ function salvaDati() {
       document.getElementById("ins-data-inserimento").value = oggiISO();
       document.getElementById("ins-data-chiamata").value = oggiISO();
       
-      setTimeout(caricaDatiDalCloud, 1500);
+      setTimeout(() => {
+        caricaVenditoriDalCloud();
+        caricaDatiDalCloud();
+      }, 1500);
     })
     .catch((err) => {
       alert("Errore nel salvataggio: " + err);
@@ -523,7 +619,10 @@ function eliminaRecord(idRecord) {
   })
     .then(() => {
       alert("🗑️ Riga eliminata!");
-      setTimeout(caricaDatiDalCloud, 1000);
+      setTimeout(() => {
+        caricaVenditoriDalCloud();
+        caricaDatiDalCloud();
+      }, 1000);
     })
     .catch((err) => {
       alert("Errore: " + err);

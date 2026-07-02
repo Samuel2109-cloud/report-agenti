@@ -40,11 +40,56 @@
  * Colonna U (21): Data Riferimento Dati
  */
 
+// Cerca il foglio principale dei dati in modo dinamico e super robusto
+function getFoglioDati() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. Prova con "Foglio1" se ha righe di dati
+  var sheet = ss.getSheetByName("Foglio1");
+  if (sheet && sheet.getLastRow() > 1) {
+    return sheet;
+  }
+  
+  // 2. Prova con "DATABASE REPORT VENDITORI"
+  sheet = ss.getSheetByName("DATABASE REPORT VENDITORI");
+  if (sheet && sheet.getLastRow() > 1) {
+    return sheet;
+  }
+
+  // 3. Cerca tra tutti i fogli se ce n'è uno che ha "Nome Venditore" o "Venditore" come intestazione
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var s = sheets[i];
+    if (s.getName() === "Agenti") continue;
+    if (s.getLastRow() > 0 && s.getLastColumn() > 1) {
+      // Leggi la riga delle intestazioni (riga 1, colonne da A a E)
+      var firstRow = s.getRange(1, 1, 1, Math.min(s.getLastColumn(), 5)).getValues()[0];
+      for (var j = 0; j < firstRow.length; j++) {
+        var val = firstRow[j].toString().toUpperCase();
+        if (val.indexOf("VENDITORE") !== -1 || val.indexOf("AGENTE") !== -1) {
+          return s;
+        }
+      }
+    }
+  }
+
+  // 4. Se non trova nulla, prova il primo foglio che non sia "Agenti" e abbia almeno 2 righe
+  for (var i = 0; i < sheets.length; i++) {
+    var s = sheets[i];
+    if (s.getName() !== "Agenti" && s.getLastRow() > 1) {
+      return s;
+    }
+  }
+  
+  // 5. Fallback assoluto
+  return sheets[0];
+}
+
 function doGet(e) {
   var action = e.parameter.action;
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Foglio1");
+  var sheet = getFoglioDati();
   if (!sheet) {
-    return ContentService.createTextOutput(JSON.stringify({ error: "Foglio 'Foglio1' non trovato nel Google Sheet." }))
+    return ContentService.createTextOutput(JSON.stringify({ error: "Foglio dati non trovato nel Google Sheet." }))
                          .setMimeType(ContentService.MimeType.JSON);
   }
   
@@ -62,7 +107,7 @@ function doGet(e) {
       
       var venditoreRaw = rowVal[1] ? rowVal[1].toString().trim().toUpperCase() : "";
       // Se non c'è il venditore in colonna B, saltiamo la riga
-      if (!venditoreRaw || venditoreRaw === "VENDITORE" || venditoreRaw === "NOME VENDITORE") {
+      if (!venditoreRaw || venditoreRaw === "VENDITORE" || venditoreRaw === "NOME VENDITORE" || venditoreRaw === "UNDEFINED") {
         continue;
       }
       
@@ -110,52 +155,48 @@ function doGet(e) {
   
   if (action === "getAgenti") {
     var agenti = [];
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheets = ss.getSheets();
     
-    // Prova a recuperare la lista dal foglio di configurazione "Agenti" se presente
-    var agentiSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Agenti");
-    if (agentiSheet) {
-      var aValues = agentiSheet.getDataRange().getValues();
-      for (var j = 1; j < aValues.length; j++) {
-        var colA = aValues[j][0] ? aValues[j][0].toString().trim() : "";
-        var colB = aValues[j][1] ? aValues[j][1].toString().trim() : "";
-        
-        // Se il nome del venditore nello sheet è sempre in colonna B, proviamo prima colB!
-        var nome = "";
-        if (colB && !/^\d+$/.test(colB) && /[A-Za-z]/.test(colB)) {
-          nome = colB;
-        } else if (colA && !/^\d+$/.test(colA) && /[A-Za-z]/.test(colA)) {
-          nome = colA;
-        }
-        
-        if (nome) {
-          var norm = nome.toUpperCase();
-          if (norm && norm !== "UNDEFINED" && norm !== "[OBJECT OBJECT]" && norm !== "VENDITORE" && norm !== "ID" && norm !== "NOME VENDITORE" && norm !== "NOME") {
-            if (agenti.indexOf(norm) === -1) {
-              agenti.push(norm);
+    // Scansioniamo esclusivamente la colonna B (2a colonna) di ciascun foglio nello spreadsheet
+    for (var i = 0; i < sheets.length; i++) {
+      var s = sheets[i];
+      var lastRow = s.getLastRow();
+      var lastCol = s.getLastColumn();
+      
+      // Se il foglio ha righe ed ha almeno 2 colonne (quindi possiede la colonna B)
+      if (lastRow > 1 && lastCol >= 2) {
+        var colValues = s.getRange(2, 2, lastRow - 1, 1).getValues();
+        for (var r = 0; r < colValues.length; r++) {
+          var valRaw = colValues[r][0];
+          if (valRaw) {
+            var val = valRaw.toString().trim().toUpperCase();
+            // Escludiamo stringhe vuote, numeri ID, intestazioni o diciture generiche di sistema
+            if (val && 
+                isNaN(Number(val)) && 
+                val !== "UNDEFINED" && 
+                val !== "[OBJECT OBJECT]" && 
+                val !== "VENDITORE" && 
+                val !== "ID" && 
+                val !== "NOME VENDITORE" && 
+                val !== "NOME" && 
+                val !== "AGENTE" && 
+                val !== "NOME AGENTE" &&
+                val.indexOf("TOTALE") === -1 &&
+                val.indexOf("TOTAL") === -1) {
+              if (agenti.indexOf(val) === -1) {
+                agenti.push(val);
+              }
             }
           }
         }
       }
     }
     
-    // Estrae anche i venditori storici inseriti nel Foglio1 per non perdere nessuno
-    var f1Values = sheet.getDataRange().getValues();
-    for (var k = 1; k < f1Values.length; k++) {
-      var vNome = f1Values[k][1]; // Colonna B (2) è il Venditore
-      if (vNome) {
-        vNome = vNome.toString().trim().toUpperCase();
-        if (vNome && !/^\d+$/.test(vNome) && vNome !== "UNDEFINED" && vNome !== "[OBJECT OBJECT]" && vNome !== "VENDITORE" && vNome !== "ID" && vNome !== "NOME VENDITORE") {
-          if (agenti.indexOf(vNome) === -1) {
-            agenti.push(vNome);
-          }
-        }
-      }
-    }
-    
-    // Ordina alfabeticamente
+    // Ordiniamo alfabeticamente per eleganza d'uso
     agenti.sort();
     
-    // Restituisce entrambi i formati di risposta per massima compatibilità con l'app
+    // Restituiamo sia l'array diretto sia la struttura { venditori: [...] } per garantire massima retrocompatibilità
     return ContentService.createTextOutput(JSON.stringify({ venditori: agenti }))
                          .setMimeType(ContentService.MimeType.JSON);
   }
@@ -165,9 +206,9 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Foglio1");
+  var sheet = getFoglioDati();
   if (!sheet) {
-    return ContentService.createTextOutput(JSON.stringify({ error: "Foglio 'Foglio1' non trovato nel Google Sheet." }))
+    return ContentService.createTextOutput(JSON.stringify({ error: "Foglio dati non trovato nel Google Sheet." }))
                          .setMimeType(ContentService.MimeType.JSON);
   }
   
