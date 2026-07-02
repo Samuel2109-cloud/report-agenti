@@ -12,6 +12,7 @@ let listaVenditori = [];
 let activeTab = "foglio1";
 let isModalOpen = false;
 let modId = null;
+let isFirstLoad = true;
 
 // ─── UTILITY DATE & TESTO ────────────────────────────────────────────────
 function oggiISO() {
@@ -239,15 +240,15 @@ function caricaDatiDalCloud() {
       if (Array.isArray(data)) {
         database = data.map((r) => {
           const dataInserimentoRaw = estraiDataYMD(r.dataInserimento || r.data_inserimento);
-          const dataChiamataRaw = estraiDataYMD(r.dataChiamata || r.data_chiamata);
+          const dataChiamataRaw = estraiDataYMD(r.dataChiamata || r.data_chiamata) || dataInserimentoRaw || oggiISO();
           const dataModificaRaw = estraiDataYMD(r.dataModifica || r.data_modifica);
           const dataRiferimentoRaw = estraiDataYMD(r.dataRiferimento || r.data_riferimento) || dataInserimentoRaw || dataChiamataRaw || oggiISO();
 
           return {
             id: numeroPulito(r.id) || Date.now() + Math.random(),
-            data: dataRiferimentoRaw,
+            data: dataChiamataRaw, // Mappa a Data Chiamata (i Richiami) per i filtri di tutti i fogli
             dataInserimento: dataInserimentoRaw || dataRiferimentoRaw,
-            dataChiamata: dataChiamataRaw || dataRiferimentoRaw,
+            dataChiamata: dataChiamataRaw,
             dataModifica: dataModificaRaw,
             dataRiferimento: dataRiferimentoRaw,
             venditore: nomeNormalizzato(r.venditore ?? r.agente ?? r.nome),
@@ -269,6 +270,32 @@ function caricaDatiDalCloud() {
           };
         }).filter((r) => r.venditore);
         
+        // Se è il primo caricamento, impostiamo i filtri in modo che contengano tutti i dati presenti nel database
+        if (isFirstLoad && database.length > 0) {
+          const dateValide = database.map((r) => r.data).filter((d) => d && d.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
+          if (dateValide.length > 0) {
+            const dataMinima = dateValide[0];
+            const dataMassima = dateValide[dateValide.length - 1];
+
+            document.getElementById("f2-inizio").value = dataMinima;
+            document.getElementById("f2-fine").value = dataMassima;
+
+            document.getElementById("f3-inizio").value = dataMinima;
+            document.getElementById("f3-fine").value = dataMassima;
+
+            document.getElementById("f4-inizio").value = dataMinima;
+            document.getElementById("f4-fine").value = dataMassima;
+
+            document.getElementById("f6-data").value = dataMassima;
+
+            document.getElementById("f7-inizio").value = dataMinima;
+            document.getElementById("f7-fine").value = dataMassima;
+
+            document.getElementById("f8-data").value = dataMassima;
+          }
+          isFirstLoad = false;
+        }
+
         // Aggiorna le viste dopo aver caricato i dati
         aggiornaSelectVenditori();
         renderActiveTab();
@@ -654,7 +681,7 @@ function renderFoglio2() {
 
     tbody.innerHTML += `
       <tr ${breakClass}>
-        <td>${formattaDataPerTabellaVisiva(r.data)}</td>
+        <td>${formattaDataPerTabellaVisiva(r.dataRiferimento)}</td>
         <td>${r.venditore}</td>
         <td>${r.lead}</td>
         <td>${r.appuntamenti}</td>
