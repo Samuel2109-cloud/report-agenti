@@ -3,7 +3,7 @@
    ========================================================================= */
 
 // ─── CONFIGURAZIONE UTENTE ───────────────────────────────────────────────
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQX8Ub6gJXGjQDTURmiM5q90KFXSMQfGNVsoSFifBDj7w9eGDO4Tg9KRr8lJjixBKPDw/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8xdB1mhUSYInE0_1IbyOBbwHSKm2mGn-CZ0PoXO4VPvC-qUZsaVRnggXXN3r_ujj_qg/exec";
 
 // ─── STATO DELL'APPLICAZIONE (DATABASE IN MEMORIA) ───────────────────────
 const FALLBACK_VENDITORI = [
