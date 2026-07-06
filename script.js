@@ -647,14 +647,14 @@ function eliminaRecord(idRecord) {
     .then((risposta) => {
       mostraLoading(false);
       if (risposta && risposta.error) {
-        alert("❌ Errore nell'eliminazione: " + risposta.error);
+        alert("❌ Errore nell'eliminazione: " + risposta.error + "\n\nDEBUG: " + JSON.stringify(risposta.debug));
         return;
       }
       if (!risposta || risposta.success !== true) {
         alert("❌ Il server non ha confermato l'eliminazione. Risposta: " + JSON.stringify(risposta));
         return;
       }
-      alert("🗑️ Riga eliminata!");
+      alert("🗑️ Riga eliminata!\n\nDEBUG: " + JSON.stringify(risposta.debug));
       setTimeout(() => {
         caricaVenditoriDalCloud();
         caricaDatiDalCloud();
@@ -757,14 +757,14 @@ function salvaModifica() {
     .then((risposta) => {
       mostraLoading(false);
       if (risposta && risposta.error) {
-        alert("❌ Errore nella modifica: " + risposta.error);
+        alert("❌ Errore nella modifica: " + risposta.error + "\n\nDEBUG: " + JSON.stringify(risposta.debug));
         return;
       }
       if (!risposta || risposta.success !== true) {
         alert("❌ Il server non ha confermato il salvataggio. Risposta: " + JSON.stringify(risposta));
         return;
       }
-      alert("✅ Modifica salvata! (La data di modifica odierna è stata registrata)");
+      alert("✅ Modifica salvata!\n\nDEBUG: " + JSON.stringify(risposta.debug));
       chiudiModifica();
       setTimeout(() => {
         caricaVenditoriDalCloud();
