@@ -3,8 +3,7 @@
    ========================================================================= */
 
 // ─── CONFIGURAZIONE UTENTE ───────────────────────────────────────────────
-// Inserisci qui il link (URL Web App) fornito da Google Apps Script dopo il deployment
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzefXKgJj0rL44nr4E0MfTmSOuMTUIcu4OF-rrVboYQcr-G_tjWqaKpIutZgA08-7u0mQ/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXra7cSob4cpuzmtSjlhbUs10onnPQqa4QXU-YM-zYWa6ygweqXPjgMvt-d4wkNY2lVg/exec";
 
 // ─── STATO DELL'APPLICAZIONE (DATABASE IN MEMORIA) ───────────────────────
 const FALLBACK_VENDITORI = [
@@ -530,10 +529,15 @@ function aggiungiAgenteManuale() {
   mostraLoading(true);
   fetch(GOOGLE_SCRIPT_URL, {
     method: "POST",
-    mode: "no-cors",
     body: JSON.stringify({ action: "salva", record })
   })
-    .then(() => {
+    .then((res) => res.json())
+    .then((risposta) => {
+      mostraLoading(false);
+      if (risposta && risposta.error) {
+        alert("❌ Errore nell'aggiungere l'agente: " + risposta.error);
+        return;
+      }
       alert("✅ Agente aggiunto e registrato nel Foglio1!");
       setTimeout(() => {
         caricaVenditoriDalCloud();
@@ -541,8 +545,8 @@ function aggiungiAgenteManuale() {
       }, 1200);
     })
     .catch((err) => {
-      alert("Errore nell'aggiungere l'agente: " + err);
       mostraLoading(false);
+      alert("❌ Errore nell'aggiungere l'agente: " + err);
     });
 }
 
@@ -592,10 +596,15 @@ function salvaDati() {
   mostraLoading(true);
   fetch(GOOGLE_SCRIPT_URL, {
     method: "POST",
-    mode: "no-cors",
     body: JSON.stringify({ action: "salva", record })
   })
-    .then(() => {
+    .then((res) => res.json())
+    .then((risposta) => {
+      mostraLoading(false);
+      if (risposta && risposta.error) {
+        alert("❌ Errore nel salvataggio: " + risposta.error);
+        return;
+      }
       alert("✅ Dati inviati correttamente su Google Sheets!");
       // Reset form
       document.getElementById("ins-venditore").value = "";
@@ -632,10 +641,19 @@ function eliminaRecord(idRecord) {
   mostraLoading(true);
   fetch(GOOGLE_SCRIPT_URL, {
     method: "POST",
-    mode: "no-cors",
     body: JSON.stringify({ action: "elimina", id: idRecord })
   })
-    .then(() => {
+    .then((res) => res.json())
+    .then((risposta) => {
+      mostraLoading(false);
+      if (risposta && risposta.error) {
+        alert("❌ Errore nell'eliminazione: " + risposta.error);
+        return;
+      }
+      if (!risposta || risposta.success !== true) {
+        alert("❌ Il server non ha confermato l'eliminazione. Risposta: " + JSON.stringify(risposta));
+        return;
+      }
       alert("🗑️ Riga eliminata!");
       setTimeout(() => {
         caricaVenditoriDalCloud();
@@ -643,8 +661,8 @@ function eliminaRecord(idRecord) {
       }, 1000);
     })
     .catch((err) => {
-      alert("Errore: " + err);
       mostraLoading(false);
+      alert("❌ Errore nell'eliminazione: " + err);
     });
 }
 
@@ -733,10 +751,19 @@ function salvaModifica() {
   mostraLoading(true);
   fetch(GOOGLE_SCRIPT_URL, {
     method: "POST",
-    mode: "no-cors",
     body: JSON.stringify({ action: "modifica", record })
   })
-    .then(() => {
+    .then((res) => res.json())
+    .then((risposta) => {
+      mostraLoading(false);
+      if (risposta && risposta.error) {
+        alert("❌ Errore nella modifica: " + risposta.error);
+        return;
+      }
+      if (!risposta || risposta.success !== true) {
+        alert("❌ Il server non ha confermato il salvataggio. Risposta: " + JSON.stringify(risposta));
+        return;
+      }
       alert("✅ Modifica salvata! (La data di modifica odierna è stata registrata)");
       chiudiModifica();
       setTimeout(() => {
@@ -745,8 +772,8 @@ function salvaModifica() {
       }, 1200);
     })
     .catch((err) => {
-      alert("Errore nella modifica: " + err);
       mostraLoading(false);
+      alert("❌ Errore nella modifica: " + err);
     });
 }
 
