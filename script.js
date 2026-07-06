@@ -3,7 +3,7 @@
    ========================================================================= */
 
 // ─── CONFIGURAZIONE UTENTE ───────────────────────────────────────────────
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQX8Ub6gJXGjQDTURmiM5q90KFXSMQfGNVsoSFifBDj7w9eGDO4Tg9KRr8lJjixBKPDw/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXra7cSob4cpuzmtSjlhbUs10onnPQqa4QXU-YM-zYWa6ygweqXPjgMvt-d4wkNY2lVg/exec";
 
 // ─── STATO DELL'APPLICAZIONE (DATABASE IN MEMORIA) ───────────────────────
 const FALLBACK_VENDITORI = [
@@ -321,7 +321,7 @@ function caricaDatiDalCloud() {
           const dataRiferimentoRaw = estraiDataYMD(r.dataRiferimento || r.data_riferimento) || dataInserimentoRaw || dataChiamataRaw || oggiISO();
 
           return {
-            id: numeroPulito(r.id) || Date.now() + Math.random(),
+            id: String(r.id || "").trim() || String(Date.now() + Math.random()),
             data: dataRiferimentoRaw, // Mappa a Data Riferimento Dati per i filtri di tutti i fogli
             dataInserimento: dataInserimentoRaw || dataRiferimentoRaw,
             dataChiamata: dataChiamataRaw,
